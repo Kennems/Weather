@@ -12,18 +12,23 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.sunnyweather.android.MainActivity
-import com.sunnyweather.android.R
 import com.sunnyweather.android.ui.weather.WeatherActivity
-import kotlinx.android.synthetic.main.fragment_place.*
+import com.sunnyweather.android.R
+import com.sunnyweather.android.databinding.FragmentPlaceBinding
+
 
 class PlaceFragment : Fragment() {
 
     val viewModel by lazy { ViewModelProviders.of(this).get(PlaceViewModel::class.java) }
-
+    private lateinit var mBinding: FragmentPlaceBinding // 声明 binding
     private lateinit var adapter: PlaceAdapter
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.fragment_place, container, false)
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+    ): View? {
+        // 使用 ViewBinding 代替传统的 inflate
+        mBinding = FragmentPlaceBinding.inflate(inflater, container, false)
+        return mBinding.root
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
@@ -40,25 +45,27 @@ class PlaceFragment : Fragment() {
             return
         }
         val layoutManager = LinearLayoutManager(activity)
-        recyclerView.layoutManager = layoutManager
-        adapter = PlaceAdapter(this, viewModel.placeList)
-        recyclerView.adapter = adapter
-        searchPlaceEdit.addTextChangedListener { editable ->
-            val content = editable.toString()
-            if (content.isNotEmpty()) {
-                viewModel.searchPlaces(content)
-            } else {
-                recyclerView.visibility = View.GONE
-                bgImageView.visibility = View.VISIBLE
-                viewModel.placeList.clear()
-                adapter.notifyDataSetChanged()
+        mBinding.run {
+            recyclerView.layoutManager = layoutManager
+            adapter = PlaceAdapter(this@PlaceFragment, viewModel.placeList)
+            recyclerView.adapter = adapter
+            searchPlaceEdit.addTextChangedListener { editable ->
+                val content = editable.toString()
+                if (content.isNotEmpty()) {
+                    viewModel.searchPlaces(content)
+                } else {
+                    recyclerView.visibility = View.GONE
+                    bgImageView.visibility = View.VISIBLE
+                    viewModel.placeList.clear()
+                    adapter.notifyDataSetChanged()
+                }
             }
         }
-        viewModel.placeLiveData.observe(this, Observer{ result ->
+        viewModel.placeLiveData.observe(viewLifecycleOwner, Observer { result ->
             val places = result.getOrNull()
             if (places != null) {
-                recyclerView.visibility = View.VISIBLE
-                bgImageView.visibility = View.GONE
+                mBinding.recyclerView.visibility = View.VISIBLE
+                mBinding.bgImageView.visibility = View.GONE
                 viewModel.placeList.clear()
                 viewModel.placeList.addAll(places)
                 adapter.notifyDataSetChanged()
